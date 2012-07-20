@@ -7,7 +7,22 @@ module Vanity
       # Do this at the very end of initialization, allowing you to change
       # connection adapter, turn collection on/off, etc.
       ::Rails.configuration.after_initialize do
+        configure_action_mailer_extensions
         Vanity.playground.load!
+      end
+    end
+
+    # Enhance ActionController with use_vanity, filters and helper methods.
+    # This has to happen in an after_initialize call to avoid clobbering the
+    # host application's ActionMailer settings.
+    def self.configure_action_mailer_extensions
+      if defined?(::ActionMailer)
+        # Include in mailer, add view helper methods.
+        ::ActionMailer::Base.class_eval do
+          include Vanity::Rails::UseVanityMailer
+          include Vanity::Rails::Filters
+          helper Vanity::Rails::Helpers
+        end
       end
     end
 
@@ -320,15 +335,6 @@ if defined?(ActionController)
         Vanity.context = @controller
       end
     end
-  end
-end
-
-if defined?(ActionMailer)
-  # Include in mailer, add view helper methods.
-  ActionMailer::Base.class_eval do
-    include Vanity::Rails::UseVanityMailer
-    include Vanity::Rails::Filters
-    helper Vanity::Rails::Helpers
   end
 end
 
